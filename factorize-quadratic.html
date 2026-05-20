@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="zh-TW">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>因式分解遊戲 - 十字相乘法</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #ffffff;
+            min-height: 100%;
+            height: 100%;
+            color: #333;
+            width: 100%;
+        }
+
+        html {
+            height: 100%;
+            width: 100%;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #718096;
+        }
+
+        .instruction-main {
+            font-size: 1rem;
+            color: #4a5568;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .level-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .level-btn {
+            padding: 12px 24px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .level-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .level-btn.active {
+            background: #4299e1;
+            color: white;
+            border-color: #4299e1;
+        }
+
+        .level-btn.active.level-2 {
+            background: #48bb78;
+            border-color: #48bb78;
+        }
+
+        .level-btn.active.level-3 {
+            background: #ed64a6;
+            border-color: #ed64a6;
+        }
+
+        .game-area {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .game-area.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .problem-answer-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .problem {
+            text-align: center;
+        }
+
+        .answer-area {
+            min-width: 300px;
+        }
+
+        .equation {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .instruction {
+            font-size: 1.1rem;
+            color: #4a5568;
+        }
+
+        .factors-pool {
+            margin-bottom: 30px;
+        }
+
+        .pool-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4a5568;
+            text-align: center;
+        }
+
+        .factors-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            min-height: 80px;
+            padding: 20px;
+            background: #edf2f7;
+            border-radius: 15px;
+            border: 2px dashed #cbd5e0;
+        }
+
+        .factor {
+            padding: 10px 20px;
+            background: #4299e1;
+            color: white;
+            border-radius: 10px;
+            cursor: grab;
+            user-select: none;
+            font-size: 2.5rem;
+            font-weight: normal;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+            font-family: 'Computer Modern', 'Latin Modern Math', 'Times New Roman', serif;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: normal;
+            letter-spacing: 0.02em;
+        }
+
+        .factor:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(66, 153, 225, 0.4);
+        }
+
+        .factor.level-2 {
+            background: #48bb78;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        .factor.level-2:hover {
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.4);
+        }
+
+        .factor.level-3 {
+            background: #ed64a6;
+            box-shadow: 0 4px 12px rgba(237, 100, 166, 0.3);
+        }
+
+        .factor.level-3:hover {
+            box-shadow: 0 8px 20px rgba(237, 100, 166, 0.4);
+        }
+
+        .factor:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+
+        .factor.selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 3px #ffd700;
+            animation: pulse 1s infinite;
+        }
+
+        .factor.dragging {
+            opacity: 0.3;
+            transform: scale(0.95);
+            transition: all 0.2s ease;
+        }
+
+        .factor.drag-clone {
+            position: fixed;
+            z-index: 1000;
+            pointer-events: none;
+            transform: scale(1.0) rotate(0deg);
+            opacity: 0.9;
+            transition: none;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .answer-slot.drop-success {
+            animation: dropSuccess 0.6s ease;
+        }
+
+        @keyframes dropSuccess {
+            0% { transform: scale(1); background: #ebf8ff; }
+            50% { transform: scale(1.1); background: #c6f6d5; }
+            100% { transform: scale(1); background: #f7fafc; }
+        }
+
+        .factor.return-animation {
+            animation: returnToPool 0.5s ease;
+        }
+
+        @keyframes returnToPool {
+            0% { transform: scale(0.95); opacity: 0.3; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .answer-area-standalone {
+            margin-bottom: 30px;
+        }
+
+        .answer-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4a5568;
+            text-align: center;
+        }
+
+        .answer-slots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .equation-mobile .equals-sign {
+            display: none;
+        }
+
+        @media (min-width: 769px) {
+            .equation-mobile {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 20px;
+            }
+
+            .equation-mobile .equation {
+                margin-bottom: 0;
+            }
+
+            .equation-mobile .equals-sign {
+                display: block;
+                font-size: 2.5rem;
+                font-weight: bold;
+                color: #2d3748;
+                font-family: 'Times New Roman', serif;
+            }
+        }
+
+        .answer-slot {
+            width: 180px;
+            height: 80px;
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f7fafc;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            color: #a0aec0;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .answer-slot.drag-over {
+            border-color: #4299e1;
+            background: #ebf8ff;
+            transform: scale(1.05);
+        }
+
+        .answer-slot .factor {
+            margin: 0;
+        }
+
+        .multiplication-sign {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4a5568;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .math-variable {
+            font-style: italic;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #ed8936;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #dd6b20;
+            transform: translateY(-2px);
+        }
+
+        .btn-new {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-new:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-new:disabled {
+            background: #a0aec0;
+            color: #718096;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-new:disabled:hover {
+            background: #a0aec0;
+            transform: none;
+        }
+
+        .btn-secondary:disabled {
+            background: #a0aec0;
+            color: #718096;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary:disabled:hover {
+            background: #a0aec0;
+            transform: none;
+        }
+
+        .feedback {
+            text-align: center;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: none;
+        }
+
+        .feedback.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #9ae6b4;
+        }
+
+        .feedback.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #fc8181;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        .score div {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            .equation {
+                font-size: 1.8rem;
+            }
+
+            .equation-mobile {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .equation-mobile .equals-sign {
+                display: none;
+            }
+
+            .equation-mobile .answer-slots {
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                position: relative;
+            }
+
+            .equation-mobile .answer-slots::before {
+                content: '=';
+                font-size: 1.8rem;
+                font-weight: bold;
+                color: #2d3748;
+                font-family: 'Times New Roman', serif;
+                position: absolute;
+                left: -30px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+
+            .problem-answer-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .answer-slots {
+                justify-content: center;
+                align-items: center;
+            }
+
+            .answer-slot {
+                width: 160px;
+                height: 70px;
+                font-size: 0.9rem;
+            }
+
+            .factor {
+                font-size: 1.8rem;
+                font-weight: normal;
+                height: 55px;
+                font-family: 'Computer Modern', 'Latin Modern Math', 'Times New Roman', serif;
+                letter-spacing: 0.02em;
+            }
+
+            .multiplication-sign {
+                font-size: 2rem;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="app-container">
+   <header class="header">
+    <h1 class="title" id="mainTitle">因式分解一元二次多項式</h1>
+    <p class="subtitle" id="subtitle">十字相乘法練習</p>
+    <p class="instruction-main" id="instructionText">拖拉正確因式到答案區域。</p>
+   </header>
+   <nav class="level-selector"><button class="level-btn active level-1" onclick="selectLevel(1)" id="level1Btn">程度一</button> <button class="level-btn level-2" onclick="selectLevel(2)" id="level2Btn">程度二</button> <button class="level-btn level-3" onclick="selectLevel(3)" id="level3Btn">程度三</button>
+   </nav>
+   <main class="game-area active" id="gameArea">
+    <div class="problem-answer-container">
+     <div class="problem">
+      <div class="equation-mobile">
+       <div class="equation" id="equation"></div>
+       <div class="equals-sign">
+        =
+       </div>
+       <div class="answer-slots">
+        <div class="answer-slot" id="slot1" ondrop="drop(event)" ondragover="allowDrop(event)" onclick="slotClick(this)">
+         放置第一個因式
+        </div>
+        <div class="multiplication-sign">
+         ×
+        </div>
+        <div class="answer-slot" id="slot2" ondrop="drop(event)" ondragover="allowDrop(event)" onclick="slotClick(this)">
+         放置第二個因式
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+    <div class="factors-pool">
+     <div class="factors-container" id="factorsContainer" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+    </div>
+    <div class="controls"><button class="btn btn-primary" onclick="checkAnswer()" id="checkBtn">檢查答案</button> <button class="btn btn-secondary" id="clearBtn" onclick="clearAnswer()">清除答案</button> <button class="btn btn-new" id="nextBtn" onclick="newProblem()" disabled>下一題</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="score">
+     <div>
+      程度一 - 答對: <span id="correct1">0</span> | 答錯: <span id="incorrect1">0</span>
+     </div>
+     <div>
+      程度二 - 答對: <span id="correct2">0</span> | 答錯: <span id="incorrect2">0</span>
+     </div>
+     <div>
+      程度三 - 答對: <span id="correct3">0</span> | 答錯: <span id="incorrect3">0</span>
+     </div>
+    </div>
+   </main>
+  </div>
+  <script>
+        const defaultConfig = {
+            main_title: "因式分解一元二次多項式",
+            subtitle: "十字相乘法練習",
+            instruction_text: "拖拉正確因式到答案區域。",
+            level1_label: "程度一",
+            level2_label: "程度二",
+            level3_label: "程度三",
+            check_button: "檢查答案",
+            clear_button: "清除答案",
+            next_button: "下一題"
+        };
+
+        async function onConfigChange(config) {
+            document.getElementById('mainTitle').textContent = config.main_title || defaultConfig.main_title;
+            document.getElementById('subtitle').textContent = config.subtitle || defaultConfig.subtitle;
+            document.getElementById('instructionText').textContent = config.instruction_text || defaultConfig.instruction_text;
+            document.getElementById('level1Btn').textContent = config.level1_label || defaultConfig.level1_label;
+            document.getElementById('level2Btn').textContent = config.level2_label || defaultConfig.level2_label;
+            document.getElementById('level3Btn').textContent = config.level3_label || defaultConfig.level3_label;
+            document.getElementById('checkBtn').textContent = config.check_button || defaultConfig.check_button;
+            document.getElementById('clearBtn').textContent = config.clear_button || defaultConfig.clear_button;
+            document.getElementById('nextBtn').textContent = config.next_button || defaultConfig.next_button;
+        }
+
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig: defaultConfig,
+                onConfigChange: onConfigChange,
+                mapToCapabilities: (config) => ({
+                    recolorables: [],
+                    borderables: [],
+                    fontEditable: undefined,
+                    fontSizeable: undefined
+                }),
+                mapToEditPanelValues: (config) => new Map([
+                    ["main_title", config.main_title || defaultConfig.main_title],
+                    ["subtitle", config.subtitle || defaultConfig.subtitle],
+                    ["instruction_text", config.instruction_text || defaultConfig.instruction_text],
+                    ["level1_label", config.level1_label || defaultConfig.level1_label],
+                    ["level2_label", config.level2_label || defaultConfig.level2_label],
+                    ["level3_label", config.level3_label || defaultConfig.level3_label],
+                    ["check_button", config.check_button || defaultConfig.check_button],
+                    ["clear_button", config.clear_button || defaultConfig.clear_button],
+                    ["next_button", config.next_button || defaultConfig.next_button]
+                ])
+            });
+        }
+
+        let currentLevel = 1;
+        let currentProblem = {};
+        let correctCount = [0, 0, 0];
+        let incorrectCount = [0, 0, 0];
+        let selectedFactor = null;
+        let currentVariable = 'x';
+
+        const variables = ['x', 'y', 'a', 'm', 'n', 'p', 'h', 'k', 's', 'u'];
+
+        function getRandomVariable() {
+            return variables[Math.floor(Math.random() * variables.length)];
+        }
+
+        function gcd(a, b, c = 1) {
+            const gcd2 = (x, y) => y === 0 ? x : gcd2(y, x % y);
+            return gcd2(gcd2(a, b), c);
+        }
+
+        function formatEquation(equation) {
+            const regex = new RegExp(currentVariable, 'g');
+            return equation.replace(regex, `<span class="math-variable">${currentVariable}</span>`);
+        }
+
+        function formatFactor(factor) {
+            const regex = new RegExp(currentVariable, 'g');
+            return factor.replace(regex, `<span class="math-variable">${currentVariable}</span>`);
+        }
+
+        function generateLevel1() {
+            const p = Math.floor(Math.random() * 8) + 1;
+            const q = Math.floor(Math.random() * 8) + 1;
+
+            const a = 1;
+            const b = p + q;
+            const c = p * q;
+
+            const bTerm = b === 1 ? currentVariable : `${b}${currentVariable}`;
+
+            const correctFactors = [`(${currentVariable} + ${p})`, `(${currentVariable} + ${q})`];
+            const wrongFactors = generateWrongFactors(correctFactors, 1, c);
+
+            return {
+                equation: formatEquation(`${currentVariable}² + ${bTerm} + ${c}`),
+                correct: correctFactors.map(f => formatFactor(f)),
+                wrong: wrongFactors.map(f => formatFactor(f))
+            };
+        }
+
+        function generateLevel2() {
+            let a, b, c, p, q;
+            let attempts = 0;
+
+            do {
+                const signs = [1, -1];
+                p = (Math.floor(Math.random() * 6) + 1) * signs[Math.floor(Math.random() * 2)];
+                q = (Math.floor(Math.random() * 6) + 1) * signs[Math.floor(Math.random() * 2)];
+
+                a = 1;
+                b = p + q;
+                c = p * q;
+
+                attempts++;
+            } while (gcd(Math.abs(a), Math.abs(b), Math.abs(c)) > 1 && attempts < 50);
+
+            let equation = `${currentVariable}²`;
+            if (b > 0) {
+                equation += b === 1 ? ` + ${currentVariable}` : ` + ${b}${currentVariable}`;
+            } else if (b < 0) {
+                equation += Math.abs(b) === 1 ? ` − ${currentVariable}` : ` − ${Math.abs(b)}${currentVariable}`;
+            }
+
+            if (c > 0) equation += ` + ${c}`;
+            else if (c < 0) equation += ` − ${Math.abs(c)}`;
+
+            const correctFactors = [
+                `(${currentVariable}${p >= 0 ? '+' : '−'}${Math.abs(p)})`,
+                `(${currentVariable}${q >= 0 ? '+' : '−'}${Math.abs(q)})`
+            ];
+            const wrongFactors = generateWrongFactors(correctFactors, 2, c);
+
+            return {
+                equation: formatEquation(equation),
+                correct: correctFactors.map(f => formatFactor(f)),
+                wrong: wrongFactors.map(f => formatFactor(f))
+            };
+        }
+
+        function generateLevel3() {
+            let a, b, c, p, q, a1, a2;
+            let attempts = 0;
+
+            do {
+                a = Math.floor(Math.random() * 9) + 2;
+                const signs = [1, -1];
+                p = (Math.floor(Math.random() * 4) + 1) * signs[Math.floor(Math.random() * 2)];
+                q = (Math.floor(Math.random() * 4) + 1) * signs[Math.floor(Math.random() * 2)];
+
+                const factors = [];
+                for (let i = 1; i <= a; i++) {
+                    if (a % i === 0) {
+                        factors.push([i, a / i]);
+                    }
+                }
+                [a1, a2] = factors[Math.floor(Math.random() * factors.length)];
+
+                b = a1 * q + a2 * p;
+                c = p * q;
+
+                attempts++;
+            } while (gcd(Math.abs(a), Math.abs(b), Math.abs(c)) > 1 && attempts < 50);
+
+            let equation = `${a}${currentVariable}²`;
+            if (b > 0) {
+                equation += b === 1 ? ` + ${currentVariable}` : ` + ${b}${currentVariable}`;
+            } else if (b < 0) {
+                equation += Math.abs(b) === 1 ? ` − ${currentVariable}` : ` − ${Math.abs(b)}${currentVariable}`;
+            }
+
+            if (c > 0) equation += ` + ${c}`;
+            else if (c < 0) equation += ` − ${Math.abs(c)}`;
+
+            const correctFactors = [
+                `(${a1 === 1 ? '' : a1}${currentVariable}${p >= 0 ? '+' : '−'}${Math.abs(p)})`,
+                `(${a2 === 1 ? '' : a2}${currentVariable}${q >= 0 ? '+' : '−'}${Math.abs(q)})`
+            ];
+            const wrongFactors = generateWrongFactors(correctFactors, 3, c);
+
+            return {
+                equation: formatEquation(equation),
+                correct: correctFactors.map(f => formatFactor(f)),
+                wrong: wrongFactors.map(f => formatFactor(f))
+            };
+        }
+
+        function getFactors(num) {
+            const factors = [];
+            const absNum = Math.abs(num);
+            for (let i = 1; i <= absNum; i++) {
+                if (absNum % i === 0) {
+                    factors.push(i);
+                }
+            }
+            return factors;
+        }
+
+        function generateWrongFactors(correct, level, constantTerm = null) {
+            const wrong = [];
+            const used = new Set(correct.map(f => f.replace(/<[^>]*>/g, '')));
+
+            if (level >= 2) {
+                const correctFactors = correct.map(f => f.replace(/<[^>]*>/g, ''));
+
+                correctFactors.forEach(correctFactor => {
+                    const match = correctFactor.match(/\((\d*)([a-z])([+−])(\d+)\)/);
+                    if (match) {
+                        const [, coeff, variable, sign, num] = match;
+                        const oppositeSign = sign === '+' ? '−' : '+';
+                        const coeffDisplay = (coeff === '' || coeff === '1') ? '' : coeff;
+
+                        const oppositeFactor = `(${coeffDisplay}${variable}${oppositeSign}${num})`;
+                        if (!used.has(oppositeFactor) && wrong.length < 4) {
+                            wrong.push(oppositeFactor);
+                            used.add(oppositeFactor);
+                        }
+
+                        if (wrong.length < 4) {
+                            const altNum = parseInt(num) === 1 ? 2 : (parseInt(num) > 1 ? parseInt(num) - 1 : parseInt(num) + 1);
+                            const altFactor = `(${coeffDisplay}${variable}${sign}${altNum})`;
+                            if (!used.has(altFactor)) {
+                                wrong.push(altFactor);
+                                used.add(altFactor);
+                            }
+                        }
+                    }
+                });
+            }
+
+            let priorityNumbers = [];
+            if (constantTerm && Math.abs(constantTerm) > 1) {
+                priorityNumbers = getFactors(constantTerm);
+                priorityNumbers.forEach(factor => {
+                    if (factor > 1) {
+                        priorityNumbers.push(factor - 1);
+                        priorityNumbers.push(factor + 1);
+                    }
+                });
+                priorityNumbers = [...new Set(priorityNumbers)].filter(n => n > 0).sort((a, b) => a - b);
+            }
+
+            let attempts = 0;
+            let priorityIndex = 0;
+
+            while (wrong.length < 4 && attempts < 100) {
+                let factor;
+
+                if (level === 1) {
+                    let num;
+                    if (priorityNumbers.length > 0 && priorityIndex < priorityNumbers.length && wrong.length < 3) {
+                        num = priorityNumbers[priorityIndex];
+                        priorityIndex++;
+                    } else {
+                        num = Math.floor(Math.random() * 12) + 1;
+                    }
+                    factor = `(${currentVariable} + ${num})`;
+                } else if (level === 2) {
+                    let num;
+                    if (priorityNumbers.length > 0 && priorityIndex < priorityNumbers.length) {
+                        num = priorityNumbers[priorityIndex];
+                        priorityIndex++;
+                    } else {
+                        num = Math.floor(Math.random() * 10) + 1;
+                    }
+                    const sign = Math.random() > 0.5 ? '+' : '−';
+                    factor = `(${currentVariable}${sign}${num})`;
+                } else {
+                    const coeff = Math.floor(Math.random() * 6) + 1;
+                    let num;
+                    if (priorityNumbers.length > 0 && priorityIndex < priorityNumbers.length) {
+                        num = priorityNumbers[priorityIndex];
+                        priorityIndex++;
+                    } else {
+                        num = Math.floor(Math.random() * 8) + 1;
+                    }
+                    const sign = Math.random() > 0.5 ? '+' : '−';
+                    const coeffDisplay = coeff === 1 ? '' : coeff;
+                    factor = `(${coeffDisplay}${currentVariable}${sign}${num})`;
+                }
+
+                if (!used.has(factor)) {
+                    wrong.push(factor);
+                    used.add(factor);
+                }
+                attempts++;
+            }
+
+            return wrong.slice(0, 4);
+        }
+
+        function selectLevel(level) {
+            currentLevel = level;
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            newProblem();
+        }
+
+        function newProblem() {
+            currentVariable = getRandomVariable();
+
+            let problem;
+            switch (currentLevel) {
+                case 1:
+                    problem = generateLevel1();
+                    break;
+                case 2:
+                    problem = generateLevel2();
+                    break;
+                case 3:
+                    problem = generateLevel3();
+                    break;
+            }
+
+            currentProblem = problem;
+
+            document.getElementById('equation').innerHTML = problem.equation;
+
+            const container = document.getElementById('factorsContainer');
+            container.innerHTML = '';
+            selectedFactor = null;
+
+            const slot1 = document.getElementById('slot1');
+            const slot2 = document.getElementById('slot2');
+            slot1.innerHTML = '放置第一個因式';
+            slot1.style.color = '#a0aec0';
+            slot2.innerHTML = '放置第二個因式';
+            slot2.style.color = '#a0aec0';
+
+            const allOptions = [...problem.correct, ...problem.wrong];
+            const shuffled = allOptions.sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < 6 && i < shuffled.length; i++) {
+                const div = document.createElement('div');
+                div.className = `factor level-${currentLevel}`;
+                div.innerHTML = shuffled[i];
+                div.draggable = true;
+                div.id = `factor-${Date.now()}-${i}`;
+                div.ondragstart = drag;
+
+                div.onclick = function() {
+                    if (selectedFactor) {
+                        selectedFactor.classList.remove('selected');
+                    }
+                    selectedFactor = this;
+                    this.classList.add('selected');
+                };
+
+                addTouchEvents(div);
+                container.appendChild(div);
+            }
+
+            hideFeedback();
+
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('clearBtn').disabled = false;
+        }
+
+        let draggedElement = null;
+        let touchOffset = { x: 0, y: 0 };
+        let isDragging = false;
+
+        function findParentFactor(element) {
+            let current = element;
+            while (current && current !== document) {
+                if (current.classList && current.classList.contains('factor')) {
+                    return current;
+                }
+                current = current.parentNode;
+            }
+            return null;
+        }
+
+        function findParentAnswerSlot(element) {
+            if (!element) return null;
+            let current = element;
+            while (current && current !== document) {
+                if (current.classList && current.classList.contains('answer-slot')) {
+                    return current;
+                }
+                current = current.parentNode;
+            }
+            return null;
+        }
+
+        function drag(event) {
+            try {
+                if (event.dataTransfer && event.dataTransfer.setData) {
+                    event.dataTransfer.setData('text', event.target.innerHTML);
+                    event.dataTransfer.setData('id', event.target.id);
+
+                    const isFromAnswerSlot = event.target.closest('.answer-slot');
+                    event.dataTransfer.setData('source', isFromAnswerSlot ? 'answer-slot' : 'factors-container');
+
+                    const dragImage = event.target.cloneNode(true);
+                    const rect = event.target.getBoundingClientRect();
+                    dragImage.style.transform = 'rotate(0deg) scale(1.0)';
+                    dragImage.style.opacity = '0.9';
+                    dragImage.style.width = rect.width + 'px';
+                    dragImage.style.height = rect.height + 'px';
+                    dragImage.style.position = 'absolute';
+                    dragImage.style.left = '-9999px';
+                    document.body.appendChild(dragImage);
+
+                    if (event.dataTransfer.setDragImage) {
+                        event.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
+                    }
+
+                    setTimeout(() => {
+                        if (dragImage.parentNode) {
+                            dragImage.parentNode.removeChild(dragImage);
+                        }
+                    }, 0);
+
+                    event.target.classList.add('dragging');
+                }
+            } catch (e) {
+                console.log('Drag not supported:', e);
+            }
+        }
+
+        function allowDrop(event) {
+            try {
+                if (event.preventDefault) event.preventDefault();
+                if (event.target.classList) event.target.classList.add('drag-over');
+            } catch (e) {
+                console.log('Allow drop error:', e);
+            }
+        }
+
+        function drop(event) {
+            try {
+                if (event.preventDefault) event.preventDefault();
+                if (event.target.classList) event.target.classList.remove('drag-over');
+
+                if (event.dataTransfer && event.dataTransfer.getData) {
+                    const data = event.dataTransfer.getData('text');
+                    const factorId = event.dataTransfer.getData('id');
+                    const sourceType = event.dataTransfer.getData('source');
+
+                    const originalFactor = document.getElementById(factorId);
+                    if (originalFactor) {
+                        originalFactor.classList.remove('dragging');
+                    }
+
+                    if (event.target.classList && event.target.classList.contains('answer-slot')) {
+                        if (sourceType === 'answer-slot') {
+                            const originalSlot = originalFactor ? originalFactor.closest('.answer-slot') : null;
+                            if (originalSlot) {
+                                originalSlot.innerHTML = originalSlot.id === 'slot1' ? '放置第一個因式' : '放置第二個因式';
+                                originalSlot.style.color = '#a0aec0';
+                            }
+                        }
+
+                        event.target.classList.add('drop-success');
+                        setTimeout(() => {
+                            event.target.classList.remove('drop-success');
+                        }, 600);
+
+                        moveFactor(data, factorId, event.target);
+                    } else if (event.target.classList && event.target.classList.contains('factors-container')) {
+                        if (sourceType === 'answer-slot') {
+                            if (originalFactor) {
+                                moveFactorToPool(originalFactor);
+                            }
+                        } else {
+                            if (originalFactor) {
+                                originalFactor.classList.add('return-animation');
+                                setTimeout(() => {
+                                    originalFactor.classList.remove('return-animation');
+                                }, 500);
+                            }
+                        }
+                    } else {
+                        if (originalFactor) {
+                            if (sourceType === 'answer-slot') {
+                                moveFactorToPool(originalFactor);
+                            } else {
+                                originalFactor.classList.add('return-animation');
+                                setTimeout(() => {
+                                    originalFactor.classList.remove('return-animation');
+                                }, 500);
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('Drop error:', e);
+            }
+        }
+
+        let audioContext;
+
+        function initAudio() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log('Audio not supported');
+                }
+            }
+        }
+
+        function playPlaceSound() {
+            ensureAudioInitialized();
+            if (!audioContext) return;
+
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (e) {
+                console.log('Sound play error:', e);
+            }
+        }
+
+        function playSuccessSound() {
+            ensureAudioInitialized();
+            if (!audioContext) return;
+
+            try {
+                const applausePattern = [
+                    { time: 0, intensity: 0.3, count: 3 },
+                    { time: 0.15, intensity: 0.4, count: 4 },
+                    { time: 0.3, intensity: 0.5, count: 5 },
+                    { time: 0.5, intensity: 0.4, count: 4 },
+                    { time: 0.7, intensity: 0.3, count: 3 },
+                    { time: 0.9, intensity: 0.2, count: 2 }
+                ];
+
+                applausePattern.forEach(pattern => {
+                    setTimeout(() => {
+                        for (let i = 0; i < pattern.count; i++) {
+                            setTimeout(() => {
+                                const bufferSize = audioContext.sampleRate * 0.1;
+                                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                                const output = buffer.getChannelData(0);
+
+                                for (let j = 0; j < bufferSize; j++) {
+                                    output[j] = Math.random() * 2 - 1;
+                                }
+
+                                const whiteNoise = audioContext.createBufferSource();
+                                whiteNoise.buffer = buffer;
+
+                                const bandpass = audioContext.createBiquadFilter();
+                                bandpass.type = 'bandpass';
+                                bandpass.frequency.setValueAtTime(1000 + Math.random() * 2000, audioContext.currentTime);
+                                bandpass.Q.setValueAtTime(1, audioContext.currentTime);
+
+                                const gainNode = audioContext.createGain();
+                                const envelope = pattern.intensity * (0.8 + Math.random() * 0.4);
+
+                                whiteNoise.connect(bandpass);
+                                bandpass.connect(gainNode);
+                                gainNode.connect(audioContext.destination);
+
+                                gainNode.gain.setValueAtTime(envelope, audioContext.currentTime);
+                                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+
+                                whiteNoise.start(audioContext.currentTime);
+                                whiteNoise.stop(audioContext.currentTime + 0.08);
+                            }, Math.random() * 50);
+                        }
+                    }, pattern.time * 1000);
+                });
+            } catch (e) {
+                console.log('Success sound error:', e);
+            }
+        }
+
+        function moveFactor(factorText, factorId, targetSlot) {
+            targetSlot.innerHTML = '';
+
+            const factorDiv = document.createElement('div');
+            factorDiv.className = `factor level-${currentLevel}`;
+            factorDiv.innerHTML = factorText;
+            factorDiv.draggable = true;
+            factorDiv.ondragstart = drag;
+            factorDiv.id = `factor-${Date.now()}-${Math.random()}`;
+
+            factorDiv.onclick = function() {
+                if (selectedFactor) {
+                    selectedFactor.classList.remove('selected');
+                }
+                selectedFactor = this;
+                this.classList.add('selected');
+            };
+
+            addTouchEvents(factorDiv);
+            targetSlot.appendChild(factorDiv);
+
+            const originalFactor = document.getElementById(factorId);
+            if (originalFactor) {
+                originalFactor.remove();
+            }
+
+            targetSlot.style.color = '#333';
+
+            playPlaceSound();
+        }
+
+        function moveFactorToPool(factorElement) {
+            const container = document.getElementById('factorsContainer');
+            const newFactor = document.createElement('div');
+            newFactor.className = `factor level-${currentLevel} return-animation`;
+            newFactor.innerHTML = factorElement.innerHTML;
+            newFactor.draggable = true;
+            newFactor.id = `factor-${Date.now()}-${Math.random()}`;
+            newFactor.ondragstart = drag;
+
+            newFactor.onclick = function() {
+                if (selectedFactor) {
+                    selectedFactor.classList.remove('selected');
+                }
+                selectedFactor = this;
+                this.classList.add('selected');
+            };
+
+            addTouchEvents(newFactor);
+            container.appendChild(newFactor);
+
+            setTimeout(() => {
+                newFactor.classList.remove('return-animation');
+            }, 500);
+
+            const slot = factorElement.closest('.answer-slot');
+            if (slot) {
+                slot.innerHTML = slot.id === 'slot1' ? '放置第一個因式' : '放置第二個因式';
+                slot.style.color = '#a0aec0';
+            }
+        }
+
+        function addTouchEvents(element) {
+            element.addEventListener('touchstart', function(event) {
+                event.preventDefault();
+
+                const touch = event.touches[0];
+                const rect = element.getBoundingClientRect();
+
+                touchOffset.x = touch.clientX - rect.left;
+                touchOffset.y = touch.clientY - rect.top;
+
+                draggedElement = element;
+                isDragging = false;
+
+                setTimeout(() => {
+                    if (draggedElement === element) {
+                        isDragging = true;
+                        element.classList.add('dragging');
+
+                        const clone = element.cloneNode(true);
+                        clone.id = 'drag-clone';
+                        clone.className = element.className + ' drag-clone';
+                        clone.style.left = (touch.clientX - touchOffset.x) + 'px';
+                        clone.style.top = (touch.clientY - touchOffset.y) + 'px';
+                        clone.style.width = rect.width + 'px';
+                        clone.style.height = rect.height + 'px';
+                        document.body.appendChild(clone);
+                    }
+                }, 150);
+            }, { passive: false });
+
+            element.addEventListener('touchmove', function(event) {
+                if (!isDragging || !draggedElement) return;
+
+                event.preventDefault();
+                const touch = event.touches[0];
+
+                const clone = document.getElementById('drag-clone');
+                if (clone) {
+                    clone.style.left = (touch.clientX - touchOffset.x) + 'px';
+                    clone.style.top = (touch.clientY - touchOffset.y) + 'px';
+                }
+
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                document.querySelectorAll('.answer-slot').forEach(slot => {
+                    slot.classList.remove('drag-over');
+                });
+
+                let answerSlot = elementBelow;
+                while (answerSlot && !answerSlot.classList.contains('answer-slot')) {
+                    answerSlot = answerSlot.parentElement;
+                }
+
+                if (answerSlot) {
+                    answerSlot.classList.add('drag-over');
+                }
+            }, { passive: false });
+
+            element.addEventListener('touchend', function(event) {
+                if (!draggedElement) return;
+
+                event.preventDefault();
+
+                if (!isDragging) {
+                    if (selectedFactor) {
+                        selectedFactor.classList.remove('selected');
+                    }
+                    selectedFactor = element;
+                    element.classList.add('selected');
+                } else {
+                    const touch = event.changedTouches[0];
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                    let answerSlot = elementBelow;
+                    while (answerSlot && !answerSlot.classList.contains('answer-slot')) {
+                        answerSlot = answerSlot.parentElement;
+                    }
+
+                    let factorsContainer = elementBelow;
+                    while (factorsContainer && !factorsContainer.classList.contains('factors-container')) {
+                        factorsContainer = factorsContainer.parentElement;
+                    }
+
+                    const isFromAnswerSlot = element.closest('.answer-slot');
+
+                    if (answerSlot && !answerSlot.querySelector('.factor')) {
+                        const factorText = element.innerHTML;
+                        const factorId = element.id;
+
+                        answerSlot.classList.add('drop-success');
+                        setTimeout(() => {
+                            answerSlot.classList.remove('drop-success');
+                        }, 600);
+
+                        if (isFromAnswerSlot) {
+                            isFromAnswerSlot.innerHTML = isFromAnswerSlot.id === 'slot1' ? '放置第一個因式' : '放置第二個因式';
+                            isFromAnswerSlot.style.color = '#a0aec0';
+                        }
+
+                        moveFactor(factorText, factorId, answerSlot);
+                    } else if (factorsContainer || isFromAnswerSlot) {
+                        if (isFromAnswerSlot) {
+                            moveFactorToPool(element);
+                        } else {
+                            element.classList.add('return-animation');
+                            setTimeout(() => {
+                                element.classList.remove('return-animation');
+                            }, 500);
+                        }
+                    } else {
+                        if (isFromAnswerSlot) {
+                            moveFactorToPool(element);
+                        } else {
+                            element.classList.add('return-animation');
+                            setTimeout(() => {
+                                element.classList.remove('return-animation');
+                            }, 500);
+                        }
+                    }
+                }
+
+                const clone = document.getElementById('drag-clone');
+                if (clone) {
+                    clone.remove();
+                }
+
+                if (draggedElement) {
+                    draggedElement.classList.remove('dragging');
+                }
+
+                document.querySelectorAll('.answer-slot').forEach(slot => {
+                    slot.classList.remove('drag-over');
+                });
+
+                isDragging = false;
+                draggedElement = null;
+            }, { passive: false });
+        }
+
+        function slotClick(slot) {
+            if (selectedFactor && !slot.querySelector('.factor')) {
+                const factorText = selectedFactor.innerHTML;
+                const factorId = selectedFactor.id;
+
+                slot.classList.add('drop-success');
+                setTimeout(() => {
+                    slot.classList.remove('drop-success');
+                }, 600);
+
+                moveFactor(factorText, factorId, slot);
+                selectedFactor.classList.remove('selected');
+                selectedFactor = null;
+            }
+        }
+
+        document.addEventListener('dragleave', function(event) {
+            if (event.target.classList.contains('answer-slot')) {
+                event.target.classList.remove('drag-over');
+            }
+        });
+
+        document.addEventListener('dragend', function(event) {
+            if (event.target.classList.contains('factor')) {
+                event.target.classList.remove('dragging');
+            }
+        });
+
+        function checkAnswer() {
+            const slot1 = document.getElementById('slot1');
+            const slot2 = document.getElementById('slot2');
+
+            const factor1 = slot1.querySelector('.factor')?.innerHTML;
+            const factor2 = slot2.querySelector('.factor')?.innerHTML;
+
+            if (!factor1 || !factor2) {
+                showFeedback('請先將兩個因式都拖拉到答案區域！', 'error');
+                return;
+            }
+
+            if (document.getElementById('nextBtn').disabled === false) {
+                return;
+            }
+
+            const userAnswer = [factor1, factor2].sort();
+            const correctAnswer = currentProblem.correct.sort();
+
+            if (JSON.stringify(userAnswer) === JSON.stringify(correctAnswer)) {
+                correctCount[currentLevel - 1]++;
+                document.getElementById(`correct${currentLevel}`).textContent = correctCount[currentLevel - 1];
+                showFeedback('🎉 答對了！做得很好！', 'success');
+                playSuccessSound();
+            } else {
+                incorrectCount[currentLevel - 1]++;
+                document.getElementById(`incorrect${currentLevel}`).textContent = incorrectCount[currentLevel - 1];
+
+                const cleanAnswer1 = correctAnswer[0].replace(/<[^>]*>/g, '');
+                const cleanAnswer2 = correctAnswer[1].replace(/<[^>]*>/g, '');
+                showFeedback(`❌ 答錯了！正確答案是：${cleanAnswer1} × ${cleanAnswer2}`, 'error');
+            }
+
+            document.getElementById('nextBtn').disabled = false;
+            document.getElementById('clearBtn').disabled = true;
+        }
+
+        function clearAnswer() {
+            if (selectedFactor) {
+                selectedFactor.classList.remove('selected');
+                selectedFactor = null;
+            }
+
+            const slots = ['slot1', 'slot2'];
+            slots.forEach(slotId => {
+                const slot = document.getElementById(slotId);
+                const factor = slot.querySelector('.factor');
+                if (factor) {
+                    const container = document.getElementById('factorsContainer');
+                    const newFactor = document.createElement('div');
+                    newFactor.className = `factor level-${currentLevel} return-animation`;
+                    newFactor.innerHTML = factor.innerHTML;
+                    newFactor.draggable = true;
+                    newFactor.id = `factor-${Date.now()}-${Math.random()}`;
+                    newFactor.ondragstart = drag;
+
+                    newFactor.onclick = function() {
+                        if (selectedFactor) {
+                            selectedFactor.classList.remove('selected');
+                        }
+                        selectedFactor = this;
+                        this.classList.add('selected');
+                    };
+
+                    addTouchEvents(newFactor);
+                    container.appendChild(newFactor);
+
+                    setTimeout(() => {
+                        newFactor.classList.remove('return-animation');
+                    }, 500);
+                }
+
+                slot.innerHTML = slotId === 'slot1' ? '放置第一個因式' : '放置第二個因式';
+                slot.style.color = '#a0aec0';
+            });
+
+            hideFeedback();
+        }
+
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = `feedback ${type}`;
+            feedback.style.display = 'block';
+        }
+
+        function hideFeedback() {
+            document.getElementById('feedback').style.display = 'none';
+        }
+
+        let audioInitialized = false;
+
+        function ensureAudioInitialized() {
+            if (!audioInitialized) {
+                initAudio();
+                audioInitialized = true;
+            }
+        }
+
+        document.addEventListener('click', ensureAudioInitialized);
+        document.addEventListener('touchstart', ensureAudioInitialized);
+
+        newProblem();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9fec165915cb8e07',t:'MTc3OTI4NzkzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
